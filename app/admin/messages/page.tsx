@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { Trash2, MessageSquare, CheckCircle2, Send, Search, UserCheck } from "lucide-react"; 
+import { Trash2, MessageSquare, CheckCircle2, Send, Search, UserCheck } from "lucide-react";
 
 type ContactMessage = {
   id: string;
@@ -19,13 +19,13 @@ type ContactMessage = {
 export default function MessagesPage() {
   const router = useRouter();
   const formRef = useRef<HTMLDivElement>(null);
-  
+
   const [loading, setLoading] = useState(true);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [dbError, setDbError] = useState<string | null>(null);
   const [inquiries, setInquiries] = useState<ContactMessage[]>([]);
 
-  const [searchQuery, setSearchQuery] = useState(""); 
+  const [searchQuery, setSearchQuery] = useState("");
   const [customMessage, setCustomMessage] = useState("");
   const [selectedPatient, setSelectedPatient] = useState("");
   const [selectedName, setSelectedName] = useState(""); // NEW: Track name separately
@@ -48,7 +48,7 @@ export default function MessagesPage() {
         .from("contact_messages")
         .update({ is_read: true })
         .eq("is_read", false);
-      
+
       window.dispatchEvent(new Event("new_inquiry_received"));
 
       messageSubscription = supabase
@@ -60,7 +60,7 @@ export default function MessagesPage() {
             const newMessage = payload.new as ContactMessage;
             setInquiries((prev) => [newMessage, ...prev]);
             showToast(`🔔 New inquiry: ${newMessage.name}`);
-            
+
             supabase
               .from("contact_messages")
               .update({ is_read: true })
@@ -100,20 +100,23 @@ export default function MessagesPage() {
 
     if (!error) {
       showToast("Moved to History.");
-      setInquiries(prev => prev.map(msg => 
+      setInquiries(prev => prev.map(msg =>
         msg.id === id ? { ...msg, status: 'replied' } : msg
       ));
     }
   }
 
   async function deleteInquiry(id: string) {
-    if (confirm("Are you sure you want to permanently delete this message?")) {
+    if (window.confirm("Are you sure you want to permanently delete this message?")) {
       const { error } = await supabase
         .from("contact_messages")
         .delete()
         .eq("id", id);
 
-      if (!error) {
+      if (error) {
+        console.error("Delete failed:", error);
+        showToast("Error deleting: " + error.message);
+      } else {
         showToast("Inquiry deleted.");
         setInquiries(prev => prev.filter(msg => msg.id !== id));
       }
@@ -125,7 +128,7 @@ export default function MessagesPage() {
     setTimeout(() => setToastMessage(null), 5000);
   }
 
-// helper to find the inquiry ID based on the phone/name currently selected
+  // helper to find the inquiry ID based on the phone/name currently selected
   const currentInquiryId = inquiries.find(
     (msg) => msg.phone === selectedPatient || msg.name === selectedName
   )?.id;
@@ -133,61 +136,61 @@ export default function MessagesPage() {
   const [showConfirm, setShowConfirm] = useState(false);
 
   async function handleSendMessage(e?: React.FormEvent) {
-  if (e) e.preventDefault();
-  
-  if (!selectedPatient || !customMessage) {
-    showToast("⚠️ Missing recipient or message.");
-    return;
+    if (e) e.preventDefault();
+
+    if (!selectedPatient || !customMessage) {
+      showToast("⚠️ Missing recipient or message.");
+      return;
+    }
+
+    // First time clicking? Show the confirmation modal instead of sending.
+    if (!showConfirm) {
+      setShowConfirm(true);
+      return;
+    }
+
+    // If we reach here, the doctor clicked "Confirm" in the modal
+    const cleaned = selectedPatient.replace(/\D/g, "");
+    const formattedPhone = cleaned.length === 10 ? `91${cleaned}` : cleaned;
+    const encodedMessage = encodeURIComponent(customMessage);
+
+    const inquiryToResolve = inquiries.find(msg =>
+      msg.phone.replace(/\D/g, "") === cleaned
+    );
+
+    // Trigger Redirects
+    if (selectedChannel === "whatsapp") {
+      window.open(`https://wa.me/${formattedPhone}?text=${encodedMessage}`, "_blank");
+    } else {
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      window.location.href = `sms:${formattedPhone}${isIOS ? '&' : '?'}body=${encodedMessage}`;
+    }
+
+    // Auto-Resolve in DB
+    if (inquiryToResolve) {
+      await markAsReplied(inquiryToResolve.id);
+    }
+
+    showToast(`Message dispatched to ${selectedName || selectedPatient}`);
+
+    // Cleanup
+    setCustomMessage("");
+    setSelectedPatient("");
+    setSelectedName("");
+    setShowConfirm(false); // Close modal
   }
-
-  // First time clicking? Show the confirmation modal instead of sending.
-  if (!showConfirm) {
-    setShowConfirm(true);
-    return;
-  }
-
-  // If we reach here, the doctor clicked "Confirm" in the modal
-  const cleaned = selectedPatient.replace(/\D/g, "");
-  const formattedPhone = cleaned.length === 10 ? `91${cleaned}` : cleaned;
-  const encodedMessage = encodeURIComponent(customMessage);
-
-  const inquiryToResolve = inquiries.find(msg => 
-    msg.phone.replace(/\D/g, "") === cleaned
-  );
-
-  // Trigger Redirects
-  if (selectedChannel === "whatsapp") {
-    window.open(`https://wa.me/${formattedPhone}?text=${encodedMessage}`, "_blank");
-  } else {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-    window.location.href = `sms:${formattedPhone}${isIOS ? '&' : '?'}body=${encodedMessage}`;
-  }
-
-  // Auto-Resolve in DB
-  if (inquiryToResolve) {
-    await markAsReplied(inquiryToResolve.id);
-  }
-
-  showToast(`Message dispatched to ${selectedName || selectedPatient}`);
-  
-  // Cleanup
-  setCustomMessage("");
-  setSelectedPatient("");
-  setSelectedName("");
-  setShowConfirm(false); // Close modal
-}
 
   function formatDate(dateString: string) {
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", { 
-      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" 
+    return date.toLocaleDateString("en-US", {
+      month: "short", day: "numeric", hour: "2-digit", minute: "2-digit"
     });
   }
-  
+
 
   const filteredInquiries = inquiries.filter((msg) => {
-    const matchesSearch = 
-      msg.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    const matchesSearch =
+      msg.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       msg.phone.includes(searchQuery);
     const matchesView = view === "active" ? msg.status !== "replied" : msg.status === "replied";
     return matchesSearch && matchesView;
@@ -212,12 +215,12 @@ export default function MessagesPage() {
           <h1 className="text-4xl font-serif font-bold text-gray-900 tracking-tight">Patient Inquiries</h1>
           <p className="text-gray-500 mt-2 text-lg italic uppercase text-[10px] font-black tracking-[0.2em] text-blue-600">Message Center</p>
         </div>
-        
+
         <div className="relative w-full md:w-80">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
-          <input 
-            type="text" 
-            placeholder="Search messages..." 
+          <input
+            type="text"
+            placeholder="Search messages..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-12 pr-6 py-4 bg-white border border-slate-200 rounded-2xl shadow-sm text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all"
@@ -227,23 +230,21 @@ export default function MessagesPage() {
 
       {/* VIEW TOGGLE */}
       <div className="flex gap-4">
-        <button 
+        <button
           onClick={() => setView("active")}
-          className={`px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
-            view === "active" 
-            ? "bg-slate-900 text-white shadow-lg" 
-            : "bg-white text-slate-400 border border-slate-100 hover:bg-slate-50"
-          }`}
+          className={`px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${view === "active"
+              ? "bg-slate-900 text-white shadow-lg"
+              : "bg-white text-slate-400 border border-slate-100 hover:bg-slate-50"
+            }`}
         >
           Active Inbox ({inquiries.filter(m => m.status !== 'replied').length})
         </button>
-        <button 
+        <button
           onClick={() => setView("resolved")}
-          className={`px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
-            view === "resolved" 
-            ? "bg-emerald-600 text-white shadow-lg" 
-            : "bg-white text-slate-400 border border-slate-100 hover:bg-slate-50"
-          }`}
+          className={`px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${view === "resolved"
+              ? "bg-emerald-600 text-white shadow-lg"
+              : "bg-white text-slate-400 border border-slate-100 hover:bg-slate-50"
+            }`}
         >
           History ({inquiries.filter(m => m.status === 'replied').length})
         </button>
@@ -252,7 +253,7 @@ export default function MessagesPage() {
       {/* QUICK REPLY FORM */}
       <div ref={formRef} className="bg-white border border-slate-200 p-8 rounded-[3rem] shadow-sm">
         <h3 className="text-xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-          <MessageSquare className="text-blue-500" size={20} /> 
+          <MessageSquare className="text-blue-500" size={20} />
           Draft Clinical Reply
         </h3>
         <form onSubmit={handleSendMessage} className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -260,14 +261,14 @@ export default function MessagesPage() {
             <div>
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Recipient Contact</label>
               <div className="space-y-3">
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   placeholder="Name or Phone"
                   value={selectedPatient}
                   onChange={(e) => setSelectedPatient(e.target.value)}
                   className="w-full px-5 py-4 rounded-2xl bg-slate-50 border-none ring-1 ring-slate-100 focus:ring-2 focus:ring-blue-500 outline-none font-bold text-slate-700 transition-all"
                 />
-                
+
                 {/* VERIFICATION BADGE */}
                 {selectedName && (
                   <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-xl border border-blue-100 animate-in fade-in zoom-in duration-300">
@@ -279,7 +280,7 @@ export default function MessagesPage() {
                 )}
               </div>
             </div>
-            
+
             <div>
               <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Outbound Channel</label>
               <div className="flex p-1 bg-slate-100 rounded-xl">
@@ -292,7 +293,7 @@ export default function MessagesPage() {
           </div>
           <div className="md:col-span-2 flex flex-col">
             <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Message Content</label>
-            <textarea 
+            <textarea
               placeholder="Start typing your response..."
               value={customMessage}
               onChange={(e) => setCustomMessage(e.target.value)}
@@ -328,18 +329,17 @@ export default function MessagesPage() {
                       "{inquiry.message}"
                     </p>
                     {inquiry.status && (
-                      <div className={`mt-6 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                        inquiry.status === "replied" ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"
-                      }`}>
+                      <div className={`mt-6 inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${inquiry.status === "replied" ? "bg-emerald-50 text-emerald-600" : "bg-amber-50 text-amber-600"
+                        }`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${inquiry.status === "replied" ? "bg-emerald-500" : "bg-amber-500"}`} />
                         {inquiry.status}
                       </div>
                     )}
                   </td>
                   <td className="p-10 text-right align-top space-y-3">
-                    <button 
-                      onClick={() => { 
-                        setSelectedPatient(inquiry.phone); 
+                    <button
+                      onClick={() => {
+                        setSelectedPatient(inquiry.phone);
                         setSelectedName(inquiry.name); // Set name for verification
                         formRef.current?.scrollIntoView({ behavior: 'smooth' });
                       }}
@@ -348,14 +348,14 @@ export default function MessagesPage() {
                       <MessageSquare size={14} /> Reply
                     </button>
                     {inquiry.status !== "replied" && (
-                      <button 
+                      <button
                         onClick={() => markAsReplied(inquiry.id)}
                         className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-emerald-50 text-emerald-700 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-emerald-600 hover:text-white transition-all shadow-sm"
                       >
                         <CheckCircle2 size={14} /> Resolve
                       </button>
                     )}
-                    <button 
+                    <button
                       onClick={() => deleteInquiry(inquiry.id)}
                       className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-rose-600 hover:text-white transition-all shadow-sm"
                     >
@@ -369,33 +369,33 @@ export default function MessagesPage() {
         </div>
       </div>
       {showConfirm && (
-  <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-200">
-    <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border border-slate-100">
-      <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6">
-        <Send size={32} />
-      </div>
-      <h3 className="text-2xl font-bold text-slate-900 mb-2">Ready to Dispatch?</h3>
-      <p className="text-slate-500 mb-8 leading-relaxed">
-        This will open <span className="font-bold text-slate-900">{selectedChannel.toUpperCase()}</span> and move this inquiry to your history.
-      </p>
-      <div className="flex gap-4">
-        <button 
-          type="button"
-          onClick={() => setShowConfirm(false)}
-          className="flex-1 py-4 bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-slate-200 transition-all"
-        >
-          Wait, Edit
-        </button>
-        <button 
-          onClick={() => handleSendMessage()}
-          className="flex-1 py-4 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-slate-900 shadow-xl shadow-blue-200 transition-all"
-        >
-          Yes, Send
-        </button>
-      </div>
-    </div>
-  </div>
-)}
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border border-slate-100">
+            <div className="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mb-6">
+              <Send size={32} />
+            </div>
+            <h3 className="text-2xl font-bold text-slate-900 mb-2">Ready to Dispatch?</h3>
+            <p className="text-slate-500 mb-8 leading-relaxed">
+              This will open <span className="font-bold text-slate-900">{selectedChannel.toUpperCase()}</span> and move this inquiry to your history.
+            </p>
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setShowConfirm(false)}
+                className="flex-1 py-4 bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-slate-200 transition-all"
+              >
+                Wait, Edit
+              </button>
+              <button
+                onClick={() => handleSendMessage()}
+                className="flex-1 py-4 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-slate-900 shadow-xl shadow-blue-200 transition-all"
+              >
+                Yes, Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

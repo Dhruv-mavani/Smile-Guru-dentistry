@@ -96,79 +96,79 @@ export default function AppointmentForm() {
     setStep((s) => s - 1);
   }
 
- async function submitBooking() {
-  // 1. Validation
-  if (!form.name.trim()) {
-    alert("Please enter your full name.");
-    return;
-  }
-
-  if (!/^[6-9]\d{9}$/.test(form.phone)) {
-    alert("Please enter a valid 10-digit phone number.");
-    return;
-  }
-
-  if (!form.time) {
-    alert("Please select a valid time slot.");
-    return;
-  }
-
-  // 2. Start Loading
-  setLoading(true);
-
-  try {
-    // 3. Send to Supabase
-    const { error } = await supabase
-      .from('appointments') 
-      .insert([form]);
-
-    if (error) {
-      console.error("Error saving to Supabase:", error);
-      alert("Could not save appointment. Please check your internet.");
-    } else {
-      // 4. Success!
-      setSubmitted(true);
+  async function submitBooking() {
+    // 1. Validation
+    if (!form.name.trim()) {
+      alert("Please enter your full name.");
+      return;
     }
-  } catch (err) {
-    console.error("Unexpected error:", err);
-    alert("An unexpected error occurred.");
-  } finally {
-    // 5. Always stop loading at the end
-    setLoading(false);
+
+    if (!/^[6-9]\d{9}$/.test(form.phone)) {
+      alert("Please enter a valid 10-digit phone number.");
+      return;
+    }
+
+    if (!form.time) {
+      alert("Please select a valid time slot.");
+      return;
+    }
+
+    // 2. Start Loading
+    setLoading(true);
+
+    try {
+      // 3. Send to Supabase
+      const { error } = await supabase
+        .from('appointments')
+        .insert([form]);
+
+      if (error) {
+        console.error("Error saving to Supabase:", error);
+        alert("Could not save appointment. Please check your internet.");
+      } else {
+        // 4. Success!
+        setSubmitted(true);
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      alert("An unexpected error occurred.");
+    } finally {
+      // 5. Always stop loading at the end
+      setLoading(false);
+    }
   }
-}
 
   // ✅ Success Screen
   if (submitted) {
-  return (
-    <div className="space-y-8 text-center">
-      <h2 className="text-3xl font-bold text-green-600">
-        🎉 Appointment Request Sent
-      </h2>
+    return (
+      <div className="space-y-8 text-center">
+        <h2 className="text-3xl font-bold text-green-600">
+          🎉 Appointment Request Sent
+        </h2>
 
-      <p className="text-gray-600 text-lg">
-        Thank you <b>{form.name}</b>. We will contact you shortly.
-      </p>
+        <p className="text-gray-600 text-lg">
+          Thank you <b>{form.name}</b>. We will contact you shortly.
+        </p>
 
-      {/* WhatsApp Button */}
-      <a
-        href={`https://wa.me/917211177727`}
-        target="_blank"
-        className="block w-full bg-green-600 text-white py-4 rounded-2xl font-semibold hover:bg-green-700 transition"
-      >
-        Message Clinic on WhatsApp
-      </a>
+        {/* WhatsApp Button */}
+        <a
+          href={`https://wa.me/917211177727`}
+          target="_blank"
+          className="block w-full bg-green-600 text-white py-4 rounded-2xl font-semibold hover:bg-green-700 transition"
+        >
+          Message Clinic on WhatsApp
+        </a>
 
-      {/* Home Button */}
-      <a
-        href="/"
-        className="block w-full bg-gray-100 text-gray-800 py-4 rounded-2xl font-semibold hover:bg-gray-200 transition"
-      >
-        Back to Home
-      </a>
-    </div>
-  );
-}
+        {/* Home Button */}
+        <a
+          href="/"
+          className="block w-full bg-gray-100 text-gray-800 py-4 rounded-2xl font-semibold hover:bg-gray-200 transition"
+        >
+          Back to Home
+        </a>
+      </div>
+    );
+  }
 
 
   return (
@@ -190,30 +190,30 @@ export default function AppointmentForm() {
       {/* STEP 1: Service */}
       {step === 1 && (
         <div>
-        <div className="grid grid-cols-2 gap-4">
-          {services.map((s) => (
-            <button
-              key={s}
-              onClick={() => {
-                setForm({ ...form, service: s });
-                next();
-              }}
-              className={`p-5 rounded-2xl border text-left transition
+          <div className="grid grid-cols-2 gap-4">
+            {services.map((s) => (
+              <button
+                key={s}
+                onClick={() => {
+                  setForm({ ...form, service: s });
+                  next();
+                }}
+                className={`p-5 rounded-2xl border text-left transition
   ${form.service === s
-    ? "bg-blue-600 text-white border-blue-600"
-    : "bg-white text-gray-900 hover:border-blue-600 hover:bg-blue-50"}
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-gray-900 hover:border-blue-600 hover:bg-blue-50"}
 `}
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-        <a
-        href="/"
-        className="block w-full bg-gray-100 text-gray-800 px-6 py-4 pt-3 mt-5 rounded-2xl font-semibold hover:bg-gray-200 transition"
-      >
-        Back to Home
-      </a>
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+          <a
+            href="/"
+            className="block w-full bg-gray-100 text-gray-800 px-6 py-4 pt-3 mt-5 rounded-2xl font-semibold hover:bg-gray-200 transition"
+          >
+            Back to Home
+          </a>
         </div>
       )}
 
@@ -261,73 +261,72 @@ export default function AppointmentForm() {
           </div>
 
           <a
-        href="/"
-        className="block w-full bg-gray-100 text-gray-800 px-6 py-4 rounded-2xl font-semibold hover:bg-gray-200 transition"
-      >
-        Back to Home
-      </a>
+            href="/"
+            className="block w-full bg-gray-100 text-gray-800 px-6 py-4 rounded-2xl font-semibold hover:bg-gray-200 transition"
+          >
+            Back to Home
+          </a>
         </div>
       )}
 
       {/* STEP 3: Time Slots */}
       {step === 3 && (
-  <div className="space-y-6">
-    <div className="grid grid-cols-3 max-sm:grid-cols-2 gap-4">
-      {getAvailableSlots().map((t) => (
-        <button
-          key={t}
-          onClick={() => setForm({ ...form, time: t })}
-          className={`py-4 rounded-2xl border transition ${
-            form.time === t
-              ? "bg-blue-600 text-white border-blue-600"
-              : "bg-white text-gray-900 hover:bg-blue-50 hover:border-blue-400"
-          }`}
-        >
-          {t}
-        </button>
-      ))}
-    </div>
+        <div className="space-y-6">
+          <div className="grid grid-cols-3 max-sm:grid-cols-2 gap-4">
+            {getAvailableSlots().map((t) => (
+              <button
+                key={t}
+                onClick={() => setForm({ ...form, time: t })}
+                className={`py-4 rounded-2xl border transition ${form.time === t
+                    ? "bg-blue-600 text-white border-blue-600"
+                    : "bg-white text-gray-900 hover:bg-blue-50 hover:border-blue-400"
+                  }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
 
-    {/* No slots message */}
-    {getAvailableSlots().length === 0 && (
-      <p className="text-sm text-red-500">
-        No available slots for this day. Please choose another date.
-      </p>
-    )}
+          {/* No slots message */}
+          {getAvailableSlots().length === 0 && (
+            <p className="text-sm text-red-500">
+              No available slots for this day. Please choose another date.
+            </p>
+          )}
 
-    {/* Buttons */}
-    <div className="flex justify-between">
-      <button
-        onClick={back}
-        className="text-gray-500 hover:text-gray-800"
-      >
-        Back
-      </button>
+          {/* Buttons */}
+          <div className="flex justify-between">
+            <button
+              onClick={back}
+              className="text-gray-500 hover:text-gray-800"
+            >
+              Back
+            </button>
 
-      <button
-        onClick={next}
-        disabled={!form.time} // ✅ MUST select time
-        className="bg-blue-600 text-white px-8 py-4 max-[400px]:px-6 max-[400px]:py-3 max-[400px]:px-6 max-[400px]:py-3 max-[400px]:px-6 max-[400px]:py-3 max-[400px]:px-6 max-[400px]:py-3 max-[400px]:px-6 max-[400px]:py-3 max-[400px]:px-6 max-[400px]:py-3 max-[400px]:px-6 max-[400px]:py-3 rounded-2xl font-semibold disabled:bg-gray-300"
-      >
-        Continue
-      </button>
-    </div>
+            <button
+              onClick={next}
+              disabled={!form.time} // ✅ MUST select time
+              className="bg-blue-600 text-white px-8 py-4 max-[400px]:px-6 max-[400px]:py-3 max-[400px]:px-6 max-[400px]:py-3 max-[400px]:px-6 max-[400px]:py-3 max-[400px]:px-6 max-[400px]:py-3 max-[400px]:px-6 max-[400px]:py-3 max-[400px]:px-6 max-[400px]:py-3 max-[400px]:px-6 max-[400px]:py-3 rounded-2xl font-semibold disabled:bg-gray-300"
+            >
+              Continue
+            </button>
+          </div>
 
-    <a
-        href="/"
-        className="block w-full bg-gray-100 text-gray-800 px-6 py-4 rounded-2xl font-semibold hover:bg-gray-200 transition"
-      >
-        Back to Home
-      </a>
+          <a
+            href="/"
+            className="block w-full bg-gray-100 text-gray-800 px-6 py-4 rounded-2xl font-semibold hover:bg-gray-200 transition"
+          >
+            Back to Home
+          </a>
 
-    {/* Warning */}
-    {!form.time && (
-      <p className="text-sm text-gray-500">
-        Please select a time slot to continue.
-      </p>
-    )}
-  </div>
-)}
+          {/* Warning */}
+          {!form.time && (
+            <p className="text-sm text-gray-500">
+              Please select a time slot to continue.
+            </p>
+          )}
+        </div>
+      )}
 
 
       {/* STEP 4: Details */}
@@ -345,17 +344,17 @@ export default function AppointmentForm() {
           />
 
           <input
-  placeholder="Phone Number"
-  type="tel"
-  maxLength={10}
-  value={form.phone}
-  onChange={(e) =>
-    setForm({ ...form, phone: e.target.value.replace(/\D/g, "") })
-  }
-  className="w-full p-5 border rounded-2xl
+            placeholder="Phone Number"
+            type="tel"
+            maxLength={10}
+            value={form.phone}
+            onChange={(e) =>
+              setForm({ ...form, phone: e.target.value.replace(/\D/g, "") })
+            }
+            className="w-full p-5 border rounded-2xl
            text-gray-900 placeholder:text-gray-500
            focus:outline-none focus:ring-2 focus:ring-blue-500"
-/>
+          />
 
 
           <div className="flex justify-between items-center">
@@ -364,19 +363,19 @@ export default function AppointmentForm() {
             </button>
 
             <button
-  onClick={submitBooking}
-  disabled={loading || !form.name || !form.phone}
-  className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-semibold disabled:bg-gray-300"
->
+              onClick={submitBooking}
+              disabled={loading || !form.name || !form.phone}
+              className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-semibold disabled:bg-gray-300"
+            >
               {loading ? "Booking..." : "Confirm"}
             </button>
           </div>
           <a
-        href="/"
-        className="block w-full bg-gray-100 text-gray-800 px-6 py-4 rounded-2xl font-semibold hover:bg-gray-200 transition"
-      >
-        Back to Home
-      </a>
+            href="/"
+            className="block w-full bg-gray-100 text-gray-800 px-6 py-4 rounded-2xl font-semibold hover:bg-gray-200 transition"
+          >
+            Back to Home
+          </a>
         </div>
       )}
     </div>
