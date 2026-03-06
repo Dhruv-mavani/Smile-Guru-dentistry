@@ -107,20 +107,19 @@ export default function MessagesPage() {
   }
 
   async function deleteInquiry(id: string) {
-    if (window.confirm("Are you sure you want to permanently delete this message?")) {
-      const { error } = await supabase
-        .from("contact_messages")
-        .delete()
-        .eq("id", id);
+    const { error } = await supabase
+      .from("contact_messages")
+      .delete()
+      .eq("id", id);
 
-      if (error) {
-        console.error("Delete failed:", error);
-        showToast("Error deleting: " + error.message);
-      } else {
-        showToast("Inquiry deleted.");
-        setInquiries(prev => prev.filter(msg => msg.id !== id));
-      }
+    if (error) {
+      console.error("Delete failed:", error);
+      showToast("Error deleting: " + error.message);
+    } else {
+      showToast("Inquiry deleted.");
+      setInquiries(prev => prev.filter(msg => msg.id !== id));
     }
+    setInquiryToDelete(null);
   }
 
   function showToast(message: string) {
@@ -134,6 +133,7 @@ export default function MessagesPage() {
   )?.id;
 
   const [showConfirm, setShowConfirm] = useState(false);
+  const [inquiryToDelete, setInquiryToDelete] = useState<string | null>(null);
 
   async function handleSendMessage(e?: React.FormEvent) {
     if (e) e.preventDefault();
@@ -233,8 +233,8 @@ export default function MessagesPage() {
         <button
           onClick={() => setView("active")}
           className={`px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${view === "active"
-              ? "bg-slate-900 text-white shadow-lg"
-              : "bg-white text-slate-400 border border-slate-100 hover:bg-slate-50"
+            ? "bg-slate-900 text-white shadow-lg"
+            : "bg-white text-slate-400 border border-slate-100 hover:bg-slate-50"
             }`}
         >
           Active Inbox ({inquiries.filter(m => m.status !== 'replied').length})
@@ -242,8 +242,8 @@ export default function MessagesPage() {
         <button
           onClick={() => setView("resolved")}
           className={`px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${view === "resolved"
-              ? "bg-emerald-600 text-white shadow-lg"
-              : "bg-white text-slate-400 border border-slate-100 hover:bg-slate-50"
+            ? "bg-emerald-600 text-white shadow-lg"
+            : "bg-white text-slate-400 border border-slate-100 hover:bg-slate-50"
             }`}
         >
           History ({inquiries.filter(m => m.status === 'replied').length})
@@ -356,7 +356,7 @@ export default function MessagesPage() {
                       </button>
                     )}
                     <button
-                      onClick={() => deleteInquiry(inquiry.id)}
+                      onClick={() => setInquiryToDelete(inquiry.id)}
                       className="w-full flex items-center justify-center gap-2 px-6 py-3 bg-rose-50 text-rose-600 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-rose-600 hover:text-white transition-all shadow-sm"
                     >
                       <Trash2 size={14} /> Delete
@@ -391,6 +391,35 @@ export default function MessagesPage() {
                 className="flex-1 py-4 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-slate-900 shadow-xl shadow-blue-200 transition-all"
               >
                 Yes, Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {inquiryToDelete && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-slate-900/40 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white rounded-[2.5rem] p-10 max-w-md w-full shadow-2xl border border-slate-100">
+            <div className="w-16 h-16 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center mb-6">
+              <Trash2 size={32} />
+            </div>
+            <h3 className="text-2xl font-bold text-slate-900 mb-2">Delete Inquiry?</h3>
+            <p className="text-slate-500 mb-8 leading-relaxed">
+              Are you sure you want to permanently delete this message? This action cannot be undone.
+            </p>
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={() => setInquiryToDelete(null)}
+                className="flex-1 py-4 bg-slate-100 text-slate-600 text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-slate-200 transition-all"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => deleteInquiry(inquiryToDelete)}
+                className="flex-1 py-4 bg-rose-600 text-white text-[10px] font-black uppercase tracking-widest rounded-2xl hover:bg-rose-700 shadow-xl shadow-rose-200 transition-all"
+              >
+                Yes, Delete
               </button>
             </div>
           </div>
